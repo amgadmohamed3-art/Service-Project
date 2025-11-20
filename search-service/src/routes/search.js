@@ -601,13 +601,24 @@ router.get('/enhanced', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
+    const cacheStats = await cacheService.getStats();
+    const cacheHealth = await cacheService.healthCheck();
+
     res.json({
       success: true,
       data: {
-        cacheSize: searchCache.size,
-        cacheTTL: CACHE_TTL / 1000, // in seconds
+        cache: {
+          ...cacheStats,
+          health: cacheHealth
+        },
+        searchConfig: {
+          searchCacheTTL: SEARCH_CACHE_TTL,
+          movieCacheTTL: MOVIE_CACHE_TTL,
+          suggestionCacheTTL: SUGGESTION_CACHE_TTL
+        },
         contentServiceUrl: CONTENT_SERVICE_URL,
-        omdbEnabled: !!OMDB_API_KEY
+        omdbEnabled: !!OMDB_API_KEY,
+        fuzzySearchEnabled: true
       }
     });
   } catch (error) {
