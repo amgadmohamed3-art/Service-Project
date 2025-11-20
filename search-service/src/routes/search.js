@@ -454,6 +454,140 @@ router.post('/sync', async (req, res) => {
 });
 
 /**
+ * GET /api/search/enhanced
+ * Enhanced search with fuzzy matching, advanced ranking, and comprehensive filters
+ */
+router.get('/enhanced', async (req, res) => {
+  try {
+    const {
+      q,
+      page = 1,
+      limit = 20,
+      type,
+      genre,
+      year,
+      minRating,
+      maxRating,
+      sortBy = 'relevance',
+      fuzzy = true
+    } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters long'
+      });
+    }
+
+    const query = q.trim();
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    // Get all available movies from both sources
+    let allMovies = [];
+
+    // Try content-service first
+    const contentServiceResult = await searchContentService(query, 1, { limit: 100 }); // Get more for better fuzzy matching
+
+    if (contentServiceResult.success && contentServiceResult.data.length > 0) {
+      const formattedResults = contentServiceResult.data.map(item => ({
+        imdbID: item.imdbID || item._id,
+        Title: item.title,
+        Year: item.year?.toString() || '',
+        Type: item.type || 'movie',
+        Poster: item.poster || '',
+        Runtime: item.duration ? `${item.duration} min` : '',
+        Genre: item.genres ? item.genres.join(', ') : '',
+        Director: item.director || '',
+        Plot: item.description || '',
+        Actors: item.actors ? item.actors.join(', ') : '',
+        imdbRating: item.imdbRating?.toString() || '',
+        averageUserRating: item.averageUserRating || 0,
+        viewCount: item.viewCount || 0
+      }));
+
+      allMovies.push(...formattedResults);
+    }
+
+    // Supplement with OMDb if needed
+    if (allMovies.length < 50) {
+      const omdbResult = await searchOMDb(query, 1);
+
+      if (omdbResult.success) {
+        const existingIds = new Set(allMovies.map(m => m.imdbID));
+        const newResults = omdbResult.data.filter(omdbMovie =>
+          !existingIds.has(omdbMovie.imdbID)
+        );
+
+        allMovies.push(...newResults.slice(0, 50 - allMovies.length));
+      }
+    }
+
+    // Apply advanced search with fuzzy matching
+    const searchOptions = {
+      query,
+      type,
+      genre,
+      year,
+      minRating,
+      maxRating,
+      sortBy,
+      limit: limitNum,
+      offset
+    };
+
+    let searchResults;
+    if (fuzzy === 'true' || fuzzy === true) {
+      searchResults = fuzzySearch.advancedSearch(allMovies, searchOptions);
+    } else {
+      // Simple search without fuzzy matching
+      searchResults = fuzzySearch.advancedSearch(allMovies, { ...searchOptions, fuzzy: false });
+    }
+
+    // Format response
+    const response = {
+      success: true,
+      data: {
+        Search: searchResults.results,
+        totalResults: searchResults.total.toString(),
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(searchResults.total / limitNum),
+          totalItems: searchResults.total,
+          itemsPerPage: limitNum,
+          hasNextPage: searchResults.hasMore,
+          hasPreviousPage: pageNum > 1
+        },
+        searchOptions: {
+          query,
+          type,
+          genre,
+          year,
+          minRating,
+          maxRating,
+          sortBy,
+          fuzzy: fuzzy === 'true' || fuzzy === true
+        },
+        sources: {
+          contentService: contentServiceResult.success,
+          omdb: allMovies.length > (contentServiceResult.data?.length || 0),
+          totalMovies: allMovies.length
+        }
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error in enhanced search:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Enhanced search temporarily unavailable'
+    });
+  }
+});
+
+/**
  * GET /api/search/stats
  * Get search service statistics
  */
