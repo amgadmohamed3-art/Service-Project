@@ -247,17 +247,8 @@ router.get('/movies', async (req, res) => {
       }
     };
 
-    // Cache the result
-    searchCache.set(cacheKey, {
-      data: response,
-      timestamp: Date.now()
-    });
-
-    // Clean old cache entries
-    if (searchCache.size > 100) {
-      const oldestKey = searchCache.keys().next().value;
-      searchCache.delete(oldestKey);
-    }
+    // Cache the result with TTL
+    await cacheService.set(cacheKey, response, SEARCH_CACHE_TTL);
 
     res.json(response);
   } catch (error) {
