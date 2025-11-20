@@ -1,5 +1,9 @@
 const router = require('express').Router();
 const axios = require('axios');
+const FuzzySearchEngine = require('../utils/fuzzySearch');
+
+// Initialize fuzzy search engine
+const fuzzySearch = new FuzzySearchEngine();
 
 // Content service configuration
 const CONTENT_SERVICE_URL = process.env.CONTENT_SERVICE_URL || 'http://localhost:6003';
