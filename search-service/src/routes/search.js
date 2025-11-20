@@ -310,45 +310,61 @@ router.get('/movie/:id', async (req, res) => {
 
 /**
  * GET /api/search/suggest
- * Get search suggestions based on partial query
+ * Get search suggestions based on partial query using fuzzy matching
  */
 router.get('/suggest', async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, limit = 10 } = req.query;
 
     if (!q || q.trim().length < 2) {
       return res.json({ suggestions: [] });
     }
 
     const query = q.trim();
+    const limitNum = parseInt(limit) || 10;
 
-    // Try content-service for suggestions
+    // Get content for suggestions
+    let allMovies = [];
+
+    // Try content-service first
     try {
-      const response = await axios.get(`${CONTENT_SERVICE_URL}/api/contents/search`, {
-        params: {
-          q: query,
-          limit: 5
-        },
+      const response = await axios.get(`${CONTENT_SERVICE_URL}/api/contents/movies`, {
+        params: { limit: 100 }, // Get more movies for better suggestions
         timeout: 3000
       });
 
       if (response.data.success && response.data.data) {
-        const suggestions = response.data.data.map(item => ({
-          id: item.imdbID || item._id,
-          title: item.title,
-          type: item.type,
-          year: item.year,
-          poster: item.poster
+        const movies = response.data.data.map(item => ({
+          imdbID: item.imdbID || item._id,
+          Title: item.title,
+          Year: item.year?.toString() || '',
+          Type: item.type || 'movie',
+          Poster: item.poster || '',
+          Genre: item.genres ? item.genres.join(', ') : ''
         }));
 
-        return res.json({ suggestions });
+        allMovies.push(...movies);
       }
     } catch (error) {
-      console.log('Content service suggestions failed, using minimal fallback');
+      console.log('Content service suggestions failed, trying OMDb');
     }
 
-    // Minimal fallback
-    res.json({ suggestions: [] });
+    // Fallback to OMDb if needed
+    if (allMovies.length < 50) {
+      try {
+        const omdbResult = await searchOMDb(query, 1);
+        if (omdbResult.success) {
+          allMovies.push(...omdbResult.data);
+        }
+      } catch (error) {
+        console.log('OMDb suggestions failed');
+      }
+    }
+
+    // Generate fuzzy suggestions
+    const suggestions = fuzzySearch.generateSuggestions(allMovies, query, limitNum);
+
+    res.json({ suggestions });
   } catch (error) {
     console.error('Error getting suggestions:', error.message);
     res.json({ suggestions: [] });
