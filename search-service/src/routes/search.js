@@ -144,7 +144,8 @@ async function searchOMDb(query, page = 1) {
  * Generate cache key for search results
  */
 function getCacheKey(query, page, filters) {
-  return `search_${query}_${page}_${JSON.stringify(filters)}`;
+  const filtersStr = JSON.stringify(filters);
+  return `search:${query}:${page}:${Buffer.from(filtersStr).toString('base64')}`;
 }
 
 /**
