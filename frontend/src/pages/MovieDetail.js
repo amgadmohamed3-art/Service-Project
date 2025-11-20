@@ -38,8 +38,9 @@ export default function MovieDetail() {
     try {
       // Get movie from OMDB API via search service with environment variable
       const searchBaseUrl = process.env.REACT_APP_SEARCH_SERVICE_URL || 'http://localhost:6005';
-      const response = await axios.get(`${searchBaseUrl}/api/search/movie/${id}`);
-      setMovie(response.data);
+      const response = await authService.makeAuthenticatedRequest(`${searchBaseUrl}/api/search/movie/${id}`);
+      const data = await response.json();
+      setMovie(data);
     } catch (err) {
       // Fallback: Create a basic movie object for demo purposes
       console.error('Error fetching movie details:', err);
