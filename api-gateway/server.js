@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
+const { authenticateToken, adminOnly, authRateLimit, searchRateLimit, defaultRateLimit } = require('./middleware/auth');
 const app = express();
 app.use(cors());
 app.use(express.json());
