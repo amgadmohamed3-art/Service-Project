@@ -31,8 +31,9 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      // Always use search service - it has the movies data
-      const response = await axios.get('http://localhost:6005/api/search/movies', {
+      // Use search service with environment variable support
+      const searchBaseUrl = process.env.REACT_APP_SEARCH_SERVICE_URL || 'http://localhost:6005';
+      const response = await axios.get(`${searchBaseUrl}/api/search/movies`, {
         params: {
           q: query,
           page: page
