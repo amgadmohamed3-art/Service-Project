@@ -72,5 +72,23 @@ app.get('/health/ready', async (req, res) => {
 const routes = require('./src/routes/index');
 app.use('/api', routes);
 
+// Initialize cache service on startup
+async function initializeServices() {
+  try {
+    // Initialize cache service
+    await cacheService.connect();
+    console.log('Search service: Cache service initialized');
+  } catch (error) {
+    console.error('Search service: Failed to initialize cache service:', error.message);
+  }
+}
+
 const PORT = process.env.PORT || 6005;
-app.listen(PORT, ()=>console.log('search-service running on port', PORT));
+
+// Start server after initializing services
+initializeServices().then(() => {
+  app.listen(PORT, () => console.log('search-service running on port', PORT));
+}).catch(error => {
+  console.error('Failed to initialize search service:', error);
+  process.exit(1);
+});
