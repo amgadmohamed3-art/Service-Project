@@ -7,22 +7,32 @@ app.use(cors());
 app.use(express.json());
 
 /*
-Example routing:
+Example routing with environment variables:
 
-* /users -> http://localhost:4001/api
-* /auth  -> http://localhost:4002/api
-* /contents -> http://localhost:4003/api
+* /users -> ${USER_SERVICE_URL}
+* /auth  -> ${AUTH_SERVICE_URL}
+* /contents -> ${CONTENT_SERVICE_URL}
   Adjust ports to match each service's PORT in .env
   */
 
-app.use('/users', createProxyMiddleware({ target: 'http://localhost:6001', changeOrigin: true }));
-app.use('/auth', createProxyMiddleware({ target: 'http://localhost:6002', changeOrigin: true }));
-app.use('/contents', createProxyMiddleware({ target: 'http://localhost:6003', changeOrigin: true }));
-app.use('/recs', createProxyMiddleware({ target: 'http://localhost:6004', changeOrigin: true }));
-app.use('/search', createProxyMiddleware({ target: 'http://localhost:6005', changeOrigin: true }));
-app.use('/reviews', createProxyMiddleware({ target: 'http://localhost:6006', changeOrigin: true }));
-app.use('/notify', createProxyMiddleware({ target: 'http://localhost:6007', changeOrigin: true }));
-app.use('/admin', createProxyMiddleware({ target: 'http://localhost:6008', changeOrigin: true }));
+// Service URLs from environment variables with localhost fallbacks
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:6001';
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:6002';
+const CONTENT_SERVICE_URL = process.env.CONTENT_SERVICE_URL || 'http://localhost:6003';
+const RECOMMENDATION_SERVICE_URL = process.env.RECOMMENDATION_SERVICE_URL || 'http://localhost:6004';
+const SEARCH_SERVICE_URL = process.env.SEARCH_SERVICE_URL || 'http://localhost:6005';
+const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || 'http://localhost:6006';
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:6007';
+const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:6008';
+
+app.use('/users', createProxyMiddleware({ target: USER_SERVICE_URL, changeOrigin: true }));
+app.use('/auth', createProxyMiddleware({ target: AUTH_SERVICE_URL, changeOrigin: true }));
+app.use('/contents', createProxyMiddleware({ target: CONTENT_SERVICE_URL, changeOrigin: true }));
+app.use('/recs', createProxyMiddleware({ target: RECOMMENDATION_SERVICE_URL, changeOrigin: true }));
+app.use('/search', createProxyMiddleware({ target: SEARCH_SERVICE_URL, changeOrigin: true }));
+app.use('/reviews', createProxyMiddleware({ target: REVIEW_SERVICE_URL, changeOrigin: true }));
+app.use('/notify', createProxyMiddleware({ target: NOTIFICATION_SERVICE_URL, changeOrigin: true }));
+app.use('/admin', createProxyMiddleware({ target: ADMIN_SERVICE_URL, changeOrigin: true }));
 
 app.get('/', (req,res)=> res.json({ gateway: true }));
 
