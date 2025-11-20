@@ -77,7 +77,7 @@ export default function MovieDetail() {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
-    
+
     if (!newReview.trim()) {
       alert('Please write a review');
       return;
@@ -85,19 +85,17 @@ export default function MovieDetail() {
 
     setSubmittingReview(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `http://localhost:4003/api/reviews`,
+      const reviewServiceUrl = 'http://localhost:4003'; // This would be from env in production
+      await authService.makeAuthenticatedRequest(
+        `${reviewServiceUrl}/api/reviews`,
         {
-          movieId: id,
-          rating: newRating,
-          comment: newReview,
-          userId: user?.id || 'anonymous'
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          method: 'POST',
+          body: JSON.stringify({
+            movieId: id,
+            rating: newRating,
+            comment: newReview,
+            userId: user?.id || 'anonymous'
+          })
         }
       );
 
@@ -107,7 +105,7 @@ export default function MovieDetail() {
       alert('Review submitted successfully!');
     } catch (err) {
       console.error('Error submitting review:', err);
-      alert('Failed to submit review. Make sure review service is running.');
+      alert('Failed to submit review. Please try again.');
     } finally {
       setSubmittingReview(false);
     }
