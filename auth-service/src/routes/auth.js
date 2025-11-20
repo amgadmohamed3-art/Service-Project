@@ -27,7 +27,7 @@ router.post('/register', async (req, res) => {
     const { email, password, name } = req.body;
 
     // Call user-service to create user
-    const userResponse = await axios.post('http://localhost:6001/api/users/register', {
+    const userResponse = await axios.post(`${USER_SERVICE_URL}/api/users/register`, {
       email,
       password,
       name
