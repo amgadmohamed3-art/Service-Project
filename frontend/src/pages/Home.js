@@ -15,15 +15,12 @@ export default function Home() {
 
   // Check authentication on mount
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
-    const userData = localStorage.getItem('user');
-    
-    if (!accessToken) {
+    if (!authService.isAuthenticated()) {
       navigate('/login');
       return;
     }
 
-    setUser(userData ? JSON.parse(userData) : null);
+    setUser(authService.getUser());
     fetchMovies('', 1);
   }, []);
 
