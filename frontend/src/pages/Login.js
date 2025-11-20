@@ -24,30 +24,17 @@ export default function Login() {
       return;
     }
 
+    setLoading(true);
     try {
-      // Call Auth Service using environment variable
-      const authBaseUrl = process.env.REACT_APP_AUTH_SERVICE_URL || 'http://localhost:6002';
-      const endpoint = isSignup
-        ? `${authBaseUrl}/api/auth/register`
-        : `${authBaseUrl}/api/auth/login`;
-      const payload = isSignup ? { name, email, password } : { email, password };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || `${isSignup ? 'Signup' : 'Login'} failed`);
+      if (isSignup) {
+        await authService.register(name, email, password);
+      } else {
+        await authService.login(email, password);
       }
 
-      const data = await response.json();
-      // Store both tokens
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Setup periodic token refresh
+      authService.setupPeriodicRefresh();
+
       setError('');
       setEmail('');
       setPassword('');
@@ -56,6 +43,8 @@ export default function Login() {
     } catch (err) {
       console.error('Backend auth failed:', err);
       setError(err.message || `${isSignup ? 'Signup' : 'Login'} failed`);
+    } finally {
+      setLoading(false);
     }
   };
 
