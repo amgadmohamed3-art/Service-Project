@@ -26,14 +26,98 @@ const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || 'http://localhost:6
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:6007';
 const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL || 'http://localhost:6008';
 
-app.use('/users', createProxyMiddleware({ target: USER_SERVICE_URL, changeOrigin: true }));
-app.use('/auth', createProxyMiddleware({ target: AUTH_SERVICE_URL, changeOrigin: true }));
-app.use('/contents', createProxyMiddleware({ target: CONTENT_SERVICE_URL, changeOrigin: true }));
-app.use('/recs', createProxyMiddleware({ target: RECOMMENDATION_SERVICE_URL, changeOrigin: true }));
-app.use('/search', createProxyMiddleware({ target: SEARCH_SERVICE_URL, changeOrigin: true }));
-app.use('/reviews', createProxyMiddleware({ target: REVIEW_SERVICE_URL, changeOrigin: true }));
-app.use('/notify', createProxyMiddleware({ target: NOTIFICATION_SERVICE_URL, changeOrigin: true }));
-app.use('/admin', createProxyMiddleware({ target: ADMIN_SERVICE_URL, changeOrigin: true }));
+// Apply authentication middleware globally
+app.use(authenticateToken);
+
+// Rate limiting for different routes
+app.use('/auth', authRateLimit);
+app.use('/search', searchRateLimit);
+app.use('/', defaultRateLimit);
+
+// Service routes with authentication
+app.use('/users', createProxyMiddleware({
+  target: USER_SERVICE_URL,
+  changeOrigin: true,
+  onProxyReq: (proxyReq, req, res) => {
+    // Forward user info to downstream services
+    if (req.user) {
+      proxyReq.setHeader('X-User-ID', req.user.userId || req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  }
+}));
+
+app.use('/auth', createProxyMiddleware({
+  target: AUTH_SERVICE_URL,
+  changeOrigin: true
+}));
+
+app.use('/contents', createProxyMiddleware({
+  target: CONTENT_SERVICE_URL,
+  changeOrigin: true,
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.user) {
+      proxyReq.setHeader('X-User-ID', req.user.userId || req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  }
+}));
+
+app.use('/recs', createProxyMiddleware({
+  target: RECOMMENDATION_SERVICE_URL,
+  changeOrigin: true,
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.user) {
+      proxyReq.setHeader('X-User-ID', req.user.userId || req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  }
+}));
+
+app.use('/search', createProxyMiddleware({
+  target: SEARCH_SERVICE_URL,
+  changeOrigin: true
+}));
+
+app.use('/reviews', createProxyMiddleware({
+  target: REVIEW_SERVICE_URL,
+  changeOrigin: true,
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.user) {
+      proxyReq.setHeader('X-User-ID', req.user.userId || req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  }
+}));
+
+app.use('/notify', createProxyMiddleware({
+  target: NOTIFICATION_SERVICE_URL,
+  changeOrigin: true,
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.user) {
+      proxyReq.setHeader('X-User-ID', req.user.userId || req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  }
+}));
+
+// Admin-only routes
+app.use('/admin', adminOnly, createProxyMiddleware({
+  target: ADMIN_SERVICE_URL,
+  changeOrigin: true,
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.user) {
+      proxyReq.setHeader('X-User-ID', req.user.userId || req.user.id);
+      proxyReq.setHeader('X-User-Email', req.user.email);
+      proxyReq.setHeader('X-User-Role', req.user.role);
+    }
+  }
+}));
 
 app.get('/', (req,res)=> res.json({ gateway: true }));
 
