@@ -16,10 +16,6 @@ const CONTENT_SERVICE_URL = process.env.CONTENT_SERVICE_URL || 'http://localhost
 const OMDB_API_KEY = process.env.OMDB_API_KEY || '70c8d861';
 const OMDB_BASE_URL = process.env.OMDB_BASE_URL || 'https://www.omdbapi.com/';
 
-// In-memory cache for frequently accessed data
-let searchCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
 /**
  * Search content-service with pagination and fallback to OMDb
  */
