@@ -2,17 +2,64 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const HealthChecker = require('../shared/health');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:6001';
+
 // TODO: replace with real MongoDB URI in .env
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/auth-service';
 mongoose.connect(MONGO_URI).then(()=>console.log('auth-service: MongoDB connected')).catch(console.error);
 
-// Basic health route
+// Initialize health checker
+const healthChecker = new HealthChecker('auth-service', {
+  checkDatabase: true,
+  databaseUri: MONGO_URI,
+  checkDependentServices: [
+    {
+      name: 'user-service',
+      url: USER_SERVICE_URL
+    }
+  ]
+});
+
+// Health endpoints
 app.get('/', (req, res) => res.json({ service: 'auth-service', status: 'ok' }));
+
+app.get('/health', async (req, res) => {
+  try {
+    const healthStatus = await healthChecker.getHealthStatus();
+    const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
+    res.status(statusCode).json(healthStatus);
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message,
+      service: 'auth-service'
+    });
+  }
+});
+
+app.get('/health/live', (req, res) => {
+  res.json(healthChecker.getLiveness());
+});
+
+app.get('/health/ready', async (req, res) => {
+  try {
+    const readiness = await healthChecker.getReadiness();
+    const statusCode = readiness.status === 'ready' ? 200 : 503;
+    res.status(statusCode).json(readiness);
+  } catch (error) {
+    res.status(500).json({
+      status: 'not-ready',
+      error: error.message,
+      service: 'auth-service'
+    });
+  }
+});
 
 // Add routes
 const routes = require('./src/routes/index');
