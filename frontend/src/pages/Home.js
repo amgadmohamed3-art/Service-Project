@@ -30,26 +30,30 @@ export default function Home() {
     try {
       // Use search service with environment variable support
       const searchBaseUrl = process.env.REACT_APP_SEARCH_SERVICE_URL || 'http://localhost:6005';
-      const response = await axios.get(`${searchBaseUrl}/api/search/movies`, {
-        params: {
-          q: query,
-          page: page
-        }
-      });
+      const url = new URL(`${searchBaseUrl}/api/search/movies`);
+      url.searchParams.append('q', query);
+      url.searchParams.append('page', page.toString());
 
-      console.log('Movies response:', response.data);
+      const response = await authService.makeAuthenticatedRequest(url.toString());
 
-      if (response.data.Response === 'True') {
-        setMovies(response.data.Search || []);
-        setTotalResults(parseInt(response.data.totalResults) || 0);
+      const data = await response.json();
+      console.log('Movies response:', data);
+
+      // Handle different response formats from search service
+      if (data.Response === 'True' || data.success) {
+        const movies = data.Search || data.data?.Search || [];
+        const totalResults = data.totalResults || data.data?.totalResults || '0';
+
+        setMovies(movies);
+        setTotalResults(parseInt(totalResults) || 0);
       } else {
-        setError(response.data.Error || 'No movies found');
+        setError(data.Error || data.error || 'No movies found');
         setMovies([]);
         setTotalResults(0);
       }
     } catch (err) {
       console.error('Error fetching movies:', err.message);
-      setError(`Failed to fetch movies. Make sure search service is running on port 6005.`);
+      setError(`Failed to fetch movies. ${err.message || 'Please try again later.'}`);
       setMovies([]);
     } finally {
       setLoading(false);
