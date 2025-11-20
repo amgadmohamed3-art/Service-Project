@@ -37,7 +37,7 @@ exports.register = async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.roles[0] // Get first role from roles array
       }
     });
   } catch (e) {
