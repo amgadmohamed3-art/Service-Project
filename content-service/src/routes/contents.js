@@ -1,237 +1,684 @@
 const router = require('express').Router();
 const Content = require('../models/Content');
+const genreService = require('../services/genreService');
+const omdbService = require('../services/omdbService');
 
-// Mock movie catalog for content service
-const MOVIES_CATALOG = [
-  {
-    Title: 'Inception',
-    Year: '2010',
-    imdbID: 'tt1375666',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMjAxMzc5NzAxN15BMl5BanBnXkFtZTcwNTI5OTMyNw@@._V1_SX300.jpg',
-    Runtime: '148 min',
-    Genre: 'Action, Sci-Fi, Thriller',
-    Director: 'Christopher Nolan',
-    Plot: 'A thief who steals corporate secrets through the use of dream-sharing technology.',
-    Actors: 'Leonardo DiCaprio, Marion Cotillard, Ellen Page',
-    imdbRating: '8.8'
-  },
-  {
-    Title: 'The Matrix',
-    Year: '1999',
-    imdbID: 'tt0133093',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTAwLWI5OTAtNTU4OWQ1NzA4Nzc1XkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg',
-    Runtime: '136 min',
-    Genre: 'Action, Sci-Fi',
-    Director: 'Lana Wachowski, Lilly Wachowski',
-    Plot: 'A computer programmer discovers that reality as he knows it is a simulation.',
-    Actors: 'Keanu Reeves, Laurence Fishburne, Carrie-Anne Moss',
-    imdbRating: '8.7'
-  },
-  {
-    Title: 'The Dark Knight',
-    Year: '2008',
-    imdbID: 'tt0468569',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_SX300.jpg',
-    Runtime: '152 min',
-    Genre: 'Action, Crime, Drama',
-    Director: 'Christopher Nolan',
-    Plot: 'When the menace known as the Joker wreaks havoc and chaos on Gotham.',
-    Actors: 'Christian Bale, Heath Ledger, Aaron Eckhart',
-    imdbRating: '9.0'
-  },
-  {
-    Title: 'Interstellar',
-    Year: '2014',
-    imdbID: 'tt0816692',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00ODE3LWFmMTAtNzU4ODExNTU2OTQ1XkEyXkFqcGdeQXVyMzQ0MzA0NTM@._V1_SX300.jpg',
-    Runtime: '169 min',
-    Genre: 'Adventure, Drama, Sci-Fi',
-    Director: 'Christopher Nolan',
-    Plot: 'A team of explorers travel through a wormhole in space to ensure humanity\'s survival.',
-    Actors: 'Matthew McConaughey, Anne Hathaway, Jessica Chastain',
-    imdbRating: '8.6'
-  },
-  {
-    Title: 'Pulp Fiction',
-    Year: '1994',
-    imdbID: 'tt0110912',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BNGNhMDIzZTUtNTBlZi00MTRlLWFjM2ItMDJlODU2OTg3ODZhXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_SX300.jpg',
-    Runtime: '154 min',
-    Genre: 'Crime, Drama',
-    Director: 'Quentin Tarantino',
-    Plot: 'The lives of two mob hitmen, a boxer, a gangster and his wife intertwine.',
-    Actors: 'John Travolta, Uma Thurman, Samuel L. Jackson',
-    imdbRating: '8.9'
-  },
-  {
-    Title: 'Forrest Gump',
-    Year: '1994',
-    imdbID: 'tt0109830',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BNWIwODRlZTUtY0d4Yy00YjA5LWEwYjgtMzk1NTMzOTkyMjkxXkEyXkFqcGdeQXVyMTAwMzUwNzk@._V1_SX300.jpg',
-    Runtime: '142 min',
-    Genre: 'Drama, Romance',
-    Director: 'Robert Zemeckis',
-    Plot: 'The presidencies of Kennedy and Johnson unfold through the perspective of an Alabama man.',
-    Actors: 'Tom Hanks, Gary Sinise, Sally Field',
-    imdbRating: '8.8'
-  },
-  {
-    Title: 'The Shawshank Redemption',
-    Year: '1994',
-    imdbID: 'tt0111161',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BNDE3ODcxYzMtY2ZhMS00NmQ2LWE3MzAtMDI3NGM2YjA2MzlkXkEyXkFqcGdeQXVyNjAwNDUxODI@._V1_SX300.jpg',
-    Runtime: '142 min',
-    Genre: 'Drama',
-    Director: 'Frank Darabont',
-    Plot: 'Two imprisoned men bond over a number of years, finding solace and eventual redemption.',
-    Actors: 'Tim Robbins, Morgan Freeman',
-    imdbRating: '9.3'
-  },
-  {
-    Title: 'Avengers: Endgame',
-    Year: '2019',
-    imdbID: 'tt4154796',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMTc5MDE2ODcwNV5BMl5BanBnXkFtZTgwMzI2NzQ2AxVQqw@@._V1_SX300.jpg',
-    Runtime: '181 min',
-    Genre: 'Action, Adventure, Drama',
-    Director: 'Anthony Russo, Joe Russo',
-    Plot: 'After the devastating events, the Avengers assemble once more to reverse Thanos\' actions.',
-    Actors: 'Robert Downey Jr., Chris Evans, Mark Ruffalo',
-    imdbRating: '8.4'
-  },
-  {
-    Title: 'Titanic',
-    Year: '1997',
-    imdbID: 'tt0120338',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMDdmZGU3NDQtY2E5My00ZDZhLWFlMTAtYTc4MDc1Nzg0Yzg1XkEyXkFqcGdeQXVyNjk1Njg5OTA@._V1_SX300.jpg',
-    Runtime: '194 min',
-    Genre: 'Drama, Romance',
-    Director: 'James Cameron',
-    Plot: 'A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious.',
-    Actors: 'Leonardo DiCaprio, Kate Winslet, Billy Zane',
-    imdbRating: '7.8'
-  },
-  {
-    Title: 'Avatar',
-    Year: '2009',
-    imdbID: 'tt0499549',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMjEyOTYzODU3Nl5BMl5BanBnXkFtZTcwOTcyMDAwOA@@._V1_SX300.jpg',
-    Runtime: '162 min',
-    Genre: 'Action, Adventure, Fantasy',
-    Director: 'James Cameron',
-    Plot: 'A paraplegic Marine dispatched to the moon Pandora on a unique mission.',
-    Actors: 'Sam Worthington, Zoe Saldana, Sigourney Weaver',
-    imdbRating: '7.8'
-  },
-  {
-    Title: 'The Godfather',
-    Year: '1972',
-    imdbID: 'tt0068646',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BM2MyNjYxNmUtYTAwNi00MTYxLWFjMzYtNDkxODZmZjg2OTFlXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_SX300.jpg',
-    Runtime: '175 min',
-    Genre: 'Crime, Drama',
-    Director: 'Francis Ford Coppola',
-    Plot: 'The aging patriarch of an organized crime dynasty transfers control of his empire.',
-    Actors: 'Marlon Brando, Al Pacino, James Caan',
-    imdbRating: '9.2'
-  },
-  {
-    Title: 'The Lion King',
-    Year: '1994',
-    imdbID: 'tt0110357',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BYTYxNGMyNWYtMjE3MS00MzNjLWFjNmYtMDk3N2FmYzZiNTg4XkEyXkFqcGdeQXVyNjY5NDk5NjE@._V1_SX300.jpg',
-    Runtime: '88 min',
-    Genre: 'Animation, Adventure, Drama',
-    Director: 'Roger Allers, Rob Minkoff',
-    Plot: 'Lion prince Simba and his father are targeted by his bitter uncle.',
-    Actors: 'James Earl Jones, Jeremy Irons, Matthew Broderick',
-    imdbRating: '8.5'
-  },
-  {
-    Title: 'Gladiator',
-    Year: '2000',
-    imdbID: 'tt0172495',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMDliMmNhNDEtODg0MS00ZThjLWIyZDUtMzhlYWIwYzZmODc5XkEyXkFqcGdeQXVyNjg2NjE4OTk@._V1_SX300.jpg',
-    Runtime: '155 min',
-    Genre: 'Action, Adventure, Drama',
-    Director: 'Ridley Scott',
-    Plot: 'A former Roman General sets out to exact vengeance against the Emperor.',
-    Actors: 'Russell Crowe, Joaquin Phoenix, Lucilla',
-    imdbRating: '8.5'
-  },
-  {
-    Title: 'The Prestige',
-    Year: '2006',
-    imdbID: 'tt0482571',
-    Type: 'movie',
-    Poster: 'https://m.media-amazon.com/images/M/MV5BMjA4NjkwNzYyM15BMl5BanBnXkFtZTcwMzAxMTgyMQ@@._V1_SX300.jpg',
-    Runtime: '130 min',
-    Genre: 'Mystery, Sci-Fi, Thriller',
-    Director: 'Christopher Nolan',
-    Plot: 'After a tragic accident, two stage magicians engage in a battle to create.',
-    Actors: 'Christian Bale, Hugh Jackman, Michael Caine',
-    imdbRating: '8.5'
-  }
-];
-
-// Get all movies (catalog) - for initial page load
+/**
+ * GET /api/contents/movies
+ * Get paginated movie list with filtering
+ */
 router.get('/movies', async (req, res) => {
   try {
-    const { page = 1 } = req.query;
-    const itemsPerPage = 10;
-    const pageNum = parseInt(page) || 1;
-    const startIdx = (pageNum - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    const paginatedResults = MOVIES_CATALOG.slice(startIdx, endIdx);
+    const {
+      page = 1,
+      limit = 20,
+      genre,
+      year,
+      rating,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search
+    } = req.query;
 
-    return res.json({
+    const skip = (page - 1) * limit;
+    const limitNum = parseInt(limit);
+    const pageNum = parseInt(page);
+
+    // Build query
+    const query = {
+      type: 'movie',
+      status: 'active'
+    };
+
+    if (genre) {
+      const normalizedGenres = genreService.normalizeGenres([genre]);
+      if (normalizedGenres.length > 0) {
+        query.genres = normalizedGenres[0];
+      }
+    }
+
+    if (year) {
+      if (year.includes('-')) {
+        const [startYear, endYear] = year.split('-').map(Number);
+        query.year = { $gte: startYear, $lte: endYear };
+      } else {
+        query.year = parseInt(year);
+      }
+    }
+
+    if (rating) {
+      const ratingThreshold = parseFloat(rating);
+      query.averageUserRating = { $gte: ratingThreshold };
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { director: { $regex: search, $options: 'i' } },
+        { actors: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort options
+    const sortOptions = {};
+    const validSortFields = ['createdAt', 'updatedAt', 'title', 'year', 'averageUserRating', 'viewCount', 'totalReviews'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    sortOptions[sortField] = sortOrder === 'asc' ? 1 : -1;
+
+    // Put featured content first
+    sortOptions.isFeatured = -1;
+
+    const [movies, total] = await Promise.all([
+      Content.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limitNum)
+        .select('-omdbData -customFields -updatedAt')
+        .lean(),
+      Content.countDocuments(query)
+    ]);
+
+    // Format response to maintain compatibility with existing frontend
+    const formattedMovies = movies.map(movie => ({
+      imdbID: movie.imdbID || movie._id,
+      Title: movie.title,
+      Year: movie.year?.toString() || '',
+      Type: movie.type,
+      Poster: movie.poster || '',
+      Runtime: movie.duration ? `${movie.duration} min` : '',
+      Genre: movie.genres ? movie.genres.join(', ') : '',
+      Director: movie.director || '',
+      Plot: movie.description || '',
+      Actors: movie.actors ? movie.actors.join(', ') : '',
+      imdbRating: movie.imdbRating?.toString() || '',
+      averageUserRating: movie.averageUserRating || 0,
+      viewCount: movie.viewCount || 0,
+      isFeatured: movie.isFeatured || false
+    }));
+
+    res.json({
+      success: true,
       Response: 'True',
-      Search: paginatedResults,
-      totalResults: MOVIES_CATALOG.length.toString()
+      Search: formattedMovies,
+      totalResults: total.toString(),
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum
+      },
+      filters: { genre, year, rating, sortBy, sortOrder, search }
     });
   } catch (error) {
     console.error('Error fetching movies:', error.message);
-    res.status(500).json({ error: 'Failed to fetch movies' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch movies'
+    });
   }
 });
 
-// Get movie details by ID
+/**
+ * GET /api/contents/movie/:id
+ * Get movie details by imdbID or database _id
+ */
 router.get('/movie/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const movie = MOVIES_CATALOG.find(m => m.imdbID === id);
-    
+
+    // Try to find by imdbID first, then by _id
+    let movie = await Content.findOne({ imdbID: id, status: 'active' });
+
     if (!movie) {
-      return res.status(404).json({ error: 'Movie not found' });
+      movie = await Content.findById(id);
     }
 
-    return res.json(movie);
+    if (!movie || movie.status !== 'active') {
+      return res.status(404).json({
+        success: false,
+        error: 'Movie not found'
+      });
+    }
+
+    // Increment view count
+    await Content.findByIdAndUpdate(movie._id, {
+      $inc: { viewCount: 1 }
+    });
+
+    // Format response to maintain compatibility
+    const formattedMovie = {
+      imdbID: movie.imdbID || movie._id,
+      Title: movie.title,
+      Year: movie.year?.toString() || '',
+      Type: movie.type,
+      Poster: movie.poster || '',
+      Runtime: movie.duration ? `${movie.duration} min` : '',
+      Genre: movie.genres ? movie.genres.join(', ') : '',
+      Director: movie.director || '',
+      Plot: movie.description || '',
+      Actors: movie.actors ? movie.actors.join(', ') : '',
+      imdbRating: movie.imdbRating?.toString() || '',
+      averageUserRating: movie.averageUserRating || 0,
+      viewCount: movie.viewCount + 1,
+      totalReviews: movie.totalReviews || 0,
+      rottenTomatoesRating: movie.rottenTomatoesRating || null,
+      metacriticRating: movie.metacriticRating || null,
+      boxOffice: movie.boxOffice || '',
+      awards: movie.awards || '',
+      language: movie.language || '',
+      country: movie.country || '',
+      production: movie.production || '',
+      website: movie.website || '',
+      trailers: movie.trailers || [],
+      posters: movie.posters || [],
+      actorsWithImages: movie.actorsWithImages || [],
+      isFeatured: movie.isFeatured || false,
+      createdAt: movie.createdAt,
+      updatedAt: movie.updatedAt
+    };
+
+    res.json({
+      success: true,
+      data: formattedMovie
+    });
   } catch (error) {
     console.error('Error fetching movie details:', error.message);
-    res.status(500).json({ error: 'Failed to fetch movie details' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch movie details'
+    });
   }
 });
 
-// CRUD examples for other content
-router.get('/', async (req,res) => {
-  const items = await Content.find().limit(50);
-  res.json(items);
+/**
+ * GET /api/contents/series
+ * Get series list with pagination
+ */
+router.get('/series', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      genre,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+    const limitNum = parseInt(limit);
+    const pageNum = parseInt(page);
+
+    // Build query
+    const query = {
+      type: 'series',
+      status: 'active'
+    };
+
+    if (genre) {
+      const normalizedGenres = genreService.normalizeGenres([genre]);
+      if (normalizedGenres.length > 0) {
+        query.genres = normalizedGenres[0];
+      }
+    }
+
+    // Build sort options
+    const sortOptions = {};
+    const validSortFields = ['createdAt', 'updatedAt', 'title', 'year', 'averageUserRating', 'viewCount'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    sortOptions[sortField] = sortOrder === 'asc' ? 1 : -1;
+
+    const [series, total] = await Promise.all([
+      Content.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limitNum)
+        .select('-omdbData -customFields -updatedAt')
+        .lean(),
+      Content.countDocuments(query)
+    ]);
+
+    // Format series with episode counts
+    const formattedSeries = await Promise.all(series.map(async (seriesItem) => {
+      const episodeCount = await Content.countDocuments({
+        seriesId: seriesItem._id,
+        status: 'active'
+      });
+
+      return {
+        imdbID: seriesItem.imdbID || seriesItem._id,
+        Title: seriesItem.title,
+        Year: seriesItem.year?.toString() || '',
+        Type: 'series',
+        Poster: seriesItem.poster || '',
+        Genre: seriesItem.genres ? seriesItem.genres.join(', ') : '',
+        Plot: seriesItem.description || '',
+        totalSeasons: seriesItem.totalSeasons || 0,
+        totalEpisodes: episodeCount,
+        averageUserRating: seriesItem.averageUserRating || 0,
+        viewCount: seriesItem.viewCount || 0,
+        isFeatured: seriesItem.isFeatured || false
+      };
+    }));
+
+    res.json({
+      success: true,
+      data: formattedSeries,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching series:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch series'
+    });
+  }
 });
-router.post('/', async (req,res) => {
-  const item = await Content.create(req.body);
-  res.json(item);
+
+/**
+ * GET /api/contents/series/:id/episodes
+ * Get all episodes for a series
+ */
+router.get('/series/:id/episodes', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { season } = req.query;
+
+    // Find series
+    let series = await Content.findOne({ imdbID: id, type: 'series', status: 'active' });
+
+    if (!series) {
+      series = await Content.findById(id);
+    }
+
+    if (!series || series.type !== 'series' || series.status !== 'active') {
+      return res.status(404).json({
+        success: false,
+        error: 'Series not found'
+      });
+    }
+
+    // Build query for episodes
+    const query = {
+      seriesId: series._id,
+      status: 'active',
+      type: 'episode'
+    };
+
+    if (season) {
+      query.seasonNumber = parseInt(season);
+    }
+
+    const episodes = await Content.find(query)
+      .sort({ seasonNumber: 1, episodeNumber: 1 })
+      .select('-omdbData -customFields -updatedAt')
+      .lean();
+
+    const formattedEpisodes = episodes.map(episode => ({
+      imdbID: episode.imdbID || episode._id,
+      Title: episode.title,
+      Year: episode.year?.toString() || '',
+      Type: 'episode',
+      Poster: episode.poster || '',
+      Runtime: episode.duration ? `${episode.duration} min` : '',
+      Plot: episode.description || '',
+      seasonNumber: episode.seasonNumber,
+      episodeNumber: episode.episodeNumber,
+      episodeTitle: episode.episodeTitle,
+      airDate: episode.airDate,
+      averageUserRating: episode.averageUserRating || 0,
+      viewCount: episode.viewCount || 0
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        series: {
+          title: series.title,
+          imdbID: series.imdbID || series._id,
+          totalSeasons: series.totalSeasons || 0
+        },
+        episodes: formattedEpisodes
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching episodes:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch episodes'
+    });
+  }
 });
+
+/**
+ * GET /api/contents/trending
+ * Get trending/popular content
+ */
+router.get('/trending', async (req, res) => {
+  try {
+    const { limit = 10, type } = req.query;
+
+    const query = {
+      status: 'active',
+      viewCount: { $gt: 0 }
+    };
+
+    if (type) {
+      query.type = type;
+    }
+
+    const trending = await Content.find(query)
+      .sort({ viewCount: -1, averageUserRating: -1 })
+      .limit(parseInt(limit))
+      .select('title imdbID poster year type averageUserRating viewCount genres')
+      .lean();
+
+    res.json({
+      success: true,
+      data: trending
+    });
+  } catch (error) {
+    console.error('Error fetching trending content:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch trending content'
+    });
+  }
+});
+
+/**
+ * GET /api/contents/featured
+ * Get admin-curated featured content
+ */
+router.get('/featured', async (req, res) => {
+  try {
+    const { limit = 12, type } = req.query;
+
+    const query = {
+      status: 'active',
+      isFeatured: true
+    };
+
+    if (type) {
+      query.type = type;
+    }
+
+    const featured = await Content.find(query)
+      .sort({ updatedAt: -1 })
+      .limit(parseInt(limit))
+      .select('title imdbID poster year type averageUserRating viewCount genres')
+      .lean();
+
+    res.json({
+      success: true,
+      data: featured
+    });
+  } catch (error) {
+    console.error('Error fetching featured content:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch featured content'
+    });
+  }
+});
+
+/**
+ * GET /api/contents/genres/:genre
+ * Get content by genre with pagination
+ */
+router.get('/genres/:genre', async (req, res) => {
+  try {
+    const { genre } = req.params;
+    const {
+      page = 1,
+      limit = 20,
+      type,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const result = await genreService.getContentByGenre(genre, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      type,
+      sortBy,
+      sortOrder
+    });
+
+    res.json({
+      success: true,
+      data: result.contents,
+      pagination: result.pagination,
+      genre: result.genre
+    });
+  } catch (error) {
+    console.error('Error getting content by genre:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get content by genre'
+    });
+  }
+});
+
+/**
+ * GET /api/contents/search
+ * Basic search endpoint (search service handles advanced search)
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const { q: query, page = 1, limit = 20, type } = req.query;
+
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters long'
+      });
+    }
+
+    const skip = (page - 1) * limit;
+    const limitNum = parseInt(limit);
+
+    // Build search query
+    const searchQuery = {
+      status: 'active',
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } },
+        { director: { $regex: query, $options: 'i' } },
+        { actors: { $regex: query, $options: 'i' } }
+      ]
+    };
+
+    if (type) {
+      searchQuery.type = type;
+    }
+
+    const [results, total] = await Promise.all([
+      Content.find(searchQuery)
+        .sort({ isFeatured: -1, viewCount: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .select('title imdbID poster year type averageUserRating viewCount genres description')
+        .lean(),
+      Content.countDocuments(searchQuery)
+    ]);
+
+    res.json({
+      success: true,
+      data: results,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum
+      },
+      query
+    });
+  } catch (error) {
+    console.error('Error searching content:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search content'
+    });
+  }
+});
+
+/**
+ * GET /api/contents/genres
+ * Get all available genres with counts
+ */
+router.get('/genres', async (req, res) => {
+  try {
+    const genreStats = await genreService.getGenreStats();
+
+    res.json({
+      success: true,
+      data: genreStats
+    });
+  } catch (error) {
+    console.error('Error getting genres:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get genres'
+    });
+  }
+});
+
+/**
+ * GET /api/contents/related/:id
+ * Get related content (same director, similar genres)
+ */
+router.get('/related/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 6 } = req.query;
+
+    // Find the main content
+    let content = await Content.findOne({ imdbID: id, status: 'active' });
+
+    if (!content) {
+      content = await Content.findById(id);
+    }
+
+    if (!content || content.status !== 'active') {
+      return res.status(404).json({
+        success: false,
+        error: 'Content not found'
+      });
+    }
+
+    // Build related content query
+    const relatedQuery = {
+      status: 'active',
+      _id: { $ne: content._id },
+      $or: []
+    };
+
+    // Same director
+    if (content.director) {
+      relatedQuery.$or.push({ director: content.director });
+    }
+
+    // Similar genres
+    if (content.genres && content.genres.length > 0) {
+      relatedQuery.$or.push({
+        genres: {
+          $in: content.genres.slice(0, 3) // Limit to top 3 genres
+        }
+      });
+    }
+
+    // If no director or genres, get content of same type
+    if (relatedQuery.$or.length === 0) {
+      relatedQuery.$or.push({ type: content.type });
+    }
+
+    const related = await Content.find(relatedQuery)
+      .sort({ averageUserRating: -1, viewCount: -1 })
+      .limit(parseInt(limit))
+      .select('title imdbID poster year type averageUserRating viewCount genres')
+      .lean();
+
+    res.json({
+      success: true,
+      data: related
+    });
+  } catch (error) {
+    console.error('Error getting related content:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get related content'
+    });
+  }
+});
+
+/**
+ * GET /api/contents
+ * Legacy endpoint - returns all content with pagination
+ */
+router.get('/', async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const items = await Content.find({ status: 'active' })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('-omdbData -customFields -updatedAt')
+      .lean();
+
+    const total = await Content.countDocuments({ status: 'active' });
+
+    res.json({
+      success: true,
+      data: items,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching contents:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch contents'
+    });
+  }
+});
+
+/**
+ * POST /api/contents
+ * Create new content (admin only, but keeping for compatibility)
+ */
+router.post('/', async (req, res) => {
+  try {
+    const contentData = {
+      ...req.body,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const item = await Content.create(contentData);
+    res.status(201).json({
+      success: true,
+      data: item
+    });
+  } catch (error) {
+    console.error('Error creating content:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create content'
+    });
+  }
+});
+
 module.exports = router;
