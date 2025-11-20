@@ -26,8 +26,8 @@ exports.register = async (req, res) => {
     const user = await User.create({
       email,
       passwordHash: hash,
-      name,
-      role: 'user' // Default role
+      name
+      // roles will default to ['User'] from the schema
     });
 
     res.status(201).json({
