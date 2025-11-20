@@ -443,13 +443,14 @@ router.get('/query', async (req, res) => {
 router.post('/sync', async (req, res) => {
   try {
     // Clear cache to force fresh data
-    searchCache.clear();
+    const clearedCount = await cacheService.clear();
 
     // This would typically trigger a reindexing process
     // For now, just clear the cache and return success
     res.json({
       success: true,
-      message: 'Search cache cleared successfully'
+      message: 'Search cache cleared successfully',
+      clearedKeys: clearedCount
     });
   } catch (error) {
     console.error('Error syncing search index:', error.message);
