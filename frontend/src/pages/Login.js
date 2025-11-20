@@ -24,10 +24,11 @@ export default function Login() {
     }
 
     try {
-      // Call Auth Service on port 6002
-      const endpoint = isSignup 
-        ? 'http://localhost:6002/api/auth/register' 
-        : 'http://localhost:6002/api/auth/login';
+      // Call Auth Service using environment variable
+      const authBaseUrl = process.env.REACT_APP_AUTH_SERVICE_URL || 'http://localhost:6002';
+      const endpoint = isSignup
+        ? `${authBaseUrl}/api/auth/register`
+        : `${authBaseUrl}/api/auth/login`;
       const payload = isSignup ? { name, email, password } : { email, password };
 
       const response = await fetch(endpoint, {
