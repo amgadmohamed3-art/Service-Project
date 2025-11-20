@@ -269,12 +269,12 @@ router.get('/movies', async (req, res) => {
 router.get('/movie/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const cacheKey = `movie_${id}`;
+    const cacheKey = `movie:${id}`;
 
     // Check cache first
-    const cached = searchCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
-      return res.json(cached.data);
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
     }
 
     const result = await getMovieWithFallback(id);
