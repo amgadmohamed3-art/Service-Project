@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import authService from '../services/authService';
 import './MovieDetail.css';
 
 export default function MovieDetail() {
