@@ -99,16 +99,17 @@ router.get('/movies', async (req, res) => {
 
     res.json({
       success: true,
-      Response: 'True',
-      Search: formattedMovies,
-      totalResults: total.toString(),
-      pagination: {
-        currentPage: pageNum,
-        totalPages: Math.ceil(total / limitNum),
-        totalItems: total,
-        itemsPerPage: limitNum
-      },
-      filters: { genre, year, rating, sortBy, sortOrder, search }
+      data: {
+        Search: formattedMovies,
+        totalResults: total.toString(),
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+          totalItems: total,
+          itemsPerPage: limitNum
+        },
+        filters: { genre, year, rating, sortBy, sortOrder, search }
+      }
     });
   } catch (error) {
     console.error('Error fetching movies:', error.message);
