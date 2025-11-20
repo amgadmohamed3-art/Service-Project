@@ -17,16 +17,20 @@ export default function MovieDetail() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    setUser(userData ? JSON.parse(userData) : null);
-    
+    if (!authService.isAuthenticated()) {
+      navigate('/login');
+      return;
+    }
+
+    setUser(authService.getUser());
+
     // Check if movie is in favorites
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     setIsFavorite(favorites.includes(id));
 
     fetchMovieDetails();
     fetchReviews();
-  }, [id]);
+  }, [id, navigate]);
 
   const fetchMovieDetails = async () => {
     setLoading(true);
