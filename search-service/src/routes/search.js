@@ -226,6 +226,11 @@ router.get('/movies', async (req, res) => {
       }
     }
 
+    // Apply fuzzy search ranking to all results
+    if (results.length > 0) {
+      results = fuzzySearch.rankResults(results, query);
+    }
+
     // Format response
     const response = {
       Response: 'True',
