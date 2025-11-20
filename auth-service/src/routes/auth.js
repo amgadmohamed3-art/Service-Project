@@ -76,7 +76,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Call user-service to verify credentials
-    const userResponse = await axios.post('http://localhost:6001/api/users/login', {
+    const userResponse = await axios.post(`${USER_SERVICE_URL}/api/users/login`, {
       email,
       password
     });
