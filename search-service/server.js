@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const HealthChecker = require('../shared/health');
+const cacheService = require('../shared/cache');
 
 const app = express();
 app.use(cors());
