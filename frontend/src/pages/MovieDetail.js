@@ -32,8 +32,9 @@ export default function MovieDetail() {
     setLoading(true);
     setError(null);
     try {
-      // Get movie from OMDB API via search service
-      const response = await axios.get(`http://localhost:6005/api/search/movie/${id}`);
+      // Get movie from OMDB API via search service with environment variable
+      const searchBaseUrl = process.env.REACT_APP_SEARCH_SERVICE_URL || 'http://localhost:6005';
+      const response = await axios.get(`${searchBaseUrl}/api/search/movie/${id}`);
       setMovie(response.data);
     } catch (err) {
       // Fallback: Create a basic movie object for demo purposes
