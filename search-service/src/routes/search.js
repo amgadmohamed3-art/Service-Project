@@ -286,11 +286,8 @@ router.get('/movie/:id', async (req, res) => {
       });
     }
 
-    // Cache the result
-    searchCache.set(cacheKey, {
-      data: result.data,
-      timestamp: Date.now()
-    });
+    // Cache the result with longer TTL for movie details
+    await cacheService.set(cacheKey, result.data, MOVIE_CACHE_TTL);
 
     res.json(result.data);
   } catch (error) {
