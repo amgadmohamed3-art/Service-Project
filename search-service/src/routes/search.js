@@ -1,9 +1,15 @@
 const router = require('express').Router();
 const axios = require('axios');
 const FuzzySearchEngine = require('../utils/fuzzySearch');
+const cacheService = require('../../shared/cache');
 
 // Initialize fuzzy search engine
 const fuzzySearch = new FuzzySearchEngine();
+
+// Cache TTL settings
+const SEARCH_CACHE_TTL = 10 * 60; // 10 minutes for search results
+const MOVIE_CACHE_TTL = 60 * 60; // 1 hour for movie details
+const SUGGESTION_CACHE_TTL = 5 * 60; // 5 minutes for suggestions
 
 // Content service configuration
 const CONTENT_SERVICE_URL = process.env.CONTENT_SERVICE_URL || 'http://localhost:6003';
