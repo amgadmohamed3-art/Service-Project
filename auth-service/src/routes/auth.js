@@ -2,13 +2,16 @@ const router = require('express').Router();
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 
+// Environment variables for service URLs
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:6001';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-refresh-secret-change-in-production';
 
 // Call user-service to verify credentials
 async function verifyCredentials(email, password) {
   try {
-    const response = await axios.post('http://localhost:6001/api/users/login', {
+    const response = await axios.post(`${USER_SERVICE_URL}/api/users/login`, {
       email,
       password
     });
